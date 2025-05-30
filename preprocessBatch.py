@@ -223,21 +223,75 @@ def selectBestBinarization(methods, original):
 # In[ ]:
 
 
+dic = [[0] * 2 for i in range(100)]
+for i in range(100):
+    dic[i][0]=25
+    dic[i][1]=25
+dic[50][0]=26
+dic[50][1]=24
+dic[48][0]=23
+dic[48][1]=30
+dic[46][0]=27
+dic[46][1]=25
+dic[45][0]=21
+dic[45][1]=30
+
 def preprocessing(from_filename, to_filename):
-    if not os.path.isfile(from_filename):
-        return
-    img = imgDenoise(from_filename)
-    img = img2Gray(img)
-    regr = findRegression(img)
-    depoly = dePolynomial(img, regr)
+    # 載入影像
+    img = cv2.imread(from_filename)
+    if img is None:
+        raise FileNotFoundError(f"找不到檔案: {from_filename}")
 
-    enhanced = enhanceText(depoly)
-    # enhanced = advancedTextEnhancement(depoly)
-    # enhanced = textSpecificBinarization(depoly)
+    height1, width1, _ = img.shape
 
-    padding = addPadding(enhanced)
-    cv2.imwrite(to_filename, padding)
-    return
+    # 降噪
+    dst = cv2.fastNlMeansDenoisingColored(img, None, 31, 31, 7, 21)
+
+    # 儲存降噪圖片到暫存（避免白邊）
+    img_bgr = cv2.cvtColor(dst, cv2.COLOR_RGB2BGR)
+
+    # 以 figsize=(width1, height1) 為基礎計算最終輸出解析度
+    output_width = int(width1 * 10)   # dpi=10
+    output_height = int(height1 * 10)
+
+    # 重新調整圖像大小
+    img_resized = cv2.resize(img_bgr, (output_width, output_height), interpolation=cv2.INTER_AREA)
+
+    # 讀取降噪後圖片再黑白化
+    ret, thresh = cv2.threshold(img_resized, 127, 255, cv2.THRESH_BINARY_INV)
+    height, width, _ = thresh.shape
+    imgarr = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
+
+    # 區域遮罩處理
+    imgarr[:, 100:width-40] = 0
+    imagedata = np.where(imgarr == 255)
+    X = np.array([imagedata[1]])
+    Y = height - imagedata[0]
+
+    # 曲線擬合
+    poly_reg = PolynomialFeatures(degree=2)
+    X_ = poly_reg.fit_transform(X.T)
+    regr = LinearRegression()
+    regr.fit(X_, Y)
+
+    # 回歸線預測
+    X2 = np.array([[i for i in range(0, width)]])
+    X2_ = poly_reg.fit_transform(X2.T)
+
+    for ele in np.column_stack([regr.predict(X2_).round(0), X2[0]]):
+        pos = height - int(ele[0])
+        start_y = max(pos - int(dic[height1][0]), 0)
+        end_y = min(pos + int(dic[height1][1]), height)
+        thresh[start_y:end_y, int(ele[1])] = 255 - thresh[start_y:end_y, int(ele[1])]
+
+    # 調整大小並儲存
+    thresh = 255 - thresh
+    newdst = cv2.resize(thresh, (140, 48), interpolation=cv2.INTER_AREA)
+    if newdst.dtype != 'uint8':
+        newdst = (newdst * 255).astype('uint8')  # 若原圖是 0~1 浮點數
+
+    # 儲存圖片
+    cv2.imwrite(to_filename, newdst)
 
 
 # In[ ]:
