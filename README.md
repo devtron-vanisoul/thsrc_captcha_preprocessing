@@ -18,7 +18,8 @@ uv pip install -r requirements.txt
 - 預先資料處理
 
 ```shell
-# 修改 preprocessBatch.ipynb 的 preprocessing
+# 修改 preprocess.ipynb 的 preprocessing
+jupyter nbconvert --to script preprocess.ipynb
 jupyter nbconvert --to script preprocessBatch.ipynb
 uv run preprocessBatch.py
 ```

@@ -316,31 +316,5 @@ def preprocessing(from_filename, to_filename):
 # In[ ]:
 
 
-i = 0
-
-# ignore existing image
-while True:
-    i += 1
-    filename = PROCESSED_FOLDER + str(i) + '.jpg'
-    if not os.path.isfile(filename):
-        i -= 1
-        break
-
-print("start to process image from index: " + str(i + 1))
-
-while True:
-    i += 1
-    filename = CAPTCHA_FOLDER + str(i) + '.jpg'
-    if not os.path.isfile(filename):
-        break
-    preprocessing(filename, PROCESSED_FOLDER + str(i) + '.jpg')
-    print("i: ", i)
-
-print("completed")
-
-
-# In[ ]:
-
-
 
 

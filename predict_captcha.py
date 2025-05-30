@@ -4,11 +4,11 @@
 台灣高鐵驗證碼識別 CLI 工具
 
 使用方式:
-    python predict_captcha.py <圖片路徑>
+    uv run predict_captcha.py <圖片路徑>
 
 範例:
-    python predict_captcha.py ./tmp_code.jpg
-    python predict_captcha.py captcha/123.jpg
+    uv run predict_captcha.py ./tmp_code.jpg
+    uv run predict_captcha.py captcha/123.jpg
 """
 
 import sys
@@ -18,10 +18,11 @@ import numpy as np
 from PIL import Image
 import argparse
 import tempfile
+import pytesseract
 
 try:
     from keras.models import load_model
-    from preprocessBatch import preprocessing
+    from preprocess import preprocessing
 except ImportError as e:
     print(f"錯誤: 缺少必要的套件 - {e}")
     print("請執行: uv pip install -r requirements.txt")
@@ -66,6 +67,13 @@ class CaptchaPredictor:
         img.save(temp_path_processed, "JPEG")
 
         preprocessing(temp_path_processed, temp_path_processed)
+
+        # result = pytesseract.image_to_string(
+        #     img,
+        #     config='--psm 7 -c tessedit_char_whitelist=' + allowedChars,
+        #     lang='eng'
+        # )
+        # predict_captcha=result.replace(' ', '')
 
         train_data = np.stack([np.array(cv2.imread(temp_path_processed))/255.0])
         model = load_model("thsrc_cnn_model.hdf5")
