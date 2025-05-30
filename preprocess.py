@@ -309,6 +309,8 @@ def preprocessing(from_filename, to_filename):
         value=[255, 255, 255]
     )
 
+    img = cv2.resize(img, (WIDTH, HEIGHT), interpolation=cv2.INTER_CUBIC)
+
     cv2.imwrite(to_filename, img)
     return
 

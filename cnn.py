@@ -27,9 +27,9 @@ allowedChars = '234579ACFHKMNPQRTYZ'
 # In[ ]:
 
 
-model = build_vgg_model(WIDTH, HEIGHT, allowedChars, NUM_DIGIT)
+# model = build_vgg_model(WIDTH, HEIGHT, allowedChars, NUM_DIGIT)
 # model = build_inceptionv3_model(IMG_SIZE, allowedChars, NUM_DIGIT)
-# model = build_resnet50_model(IMG_SIZE, allowedChars, NUM_DIGIT)
+model = build_resnet50_model(WIDTH, HEIGHT, allowedChars, NUM_DIGIT)
 
 
 # In[3]:

@@ -117,14 +117,18 @@ def build_vgg_model(width, height, allowedChars, num_digit):
 
 
 from keras.applications import ResNet50
+import tensorflow_addons as tfa
 
-def build_resnet50_model(size, allowedChars, num_digit):
-    model = ResNet50(weights='imagenet', include_top=False, input_shape=(size, size, 3))
+def build_resnet50_model(width, height, allowedChars, num_digit):
+    model = ResNet50(weights='imagenet', include_top=False, input_shape=(height, width, 3))
 
     tensor_in = model.input
 
     tensor_out = model.output
     tensor_out = Flatten()(tensor_out)
+
+    tensor_out = tfa.layers.GroupNormalization(groups=32)(tensor_out)
+
     tensor_out = Dropout(0.5)(tensor_out)
     outputs = [Dense(len(allowedChars), name='digit' + str(i), activation='softmax')(tensor_out) for i in range(1, num_digit + 1)]
 
@@ -139,8 +143,8 @@ def build_resnet50_model(size, allowedChars, num_digit):
 
 from keras.applications import InceptionV3
 
-def build_inceptionv3_model(size, allowedChars, num_digit):
-    model = InceptionV3(weights='imagenet', include_top=False, input_shape=(size, size, 3))
+def build_inceptionv3_model(width, height, allowedChars, num_digit):
+    model = InceptionV3(weights='imagenet', include_top=False, input_shape=(height, width, 3))
 
     tensor_in = model.input
 
