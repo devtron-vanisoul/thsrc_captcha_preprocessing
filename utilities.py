@@ -47,7 +47,7 @@ def read_train_data(filename, size):
 def read_label_data(filename, allowedChars, num_dic, size):
     train_label = []
     traincsv = open(filename, 'r', encoding = 'utf8')
-    
+
     read_label =  [one_hot_encoding(row[0], allowedChars) for row in csv.reader(traincsv)]
     read_label =  read_label[:size]
     train_label = [[] for _ in range(num_dic)]
@@ -78,7 +78,7 @@ def show_train_history(train_history, train, validation):
 
 from keras.models import Model
 from keras.layers import Input, Dense, Dropout, Flatten, Conv2D, MaxPooling2D
-from tensorflow.keras.layers import BatchNormalization
+import tensorflow_addons as tfa
 
 def build_vgg_model(width, height, allowedChars, num_digit):
     tensor_in = Input((height, width, 3))
@@ -92,24 +92,24 @@ def build_vgg_model(width, height, allowedChars, num_digit):
     tensor_out = MaxPooling2D(pool_size=(2, 2))(tensor_out)
     tensor_out = Conv2D(filters=128, kernel_size=(3, 3), padding='same', activation='relu')(tensor_out)
     tensor_out = Conv2D(filters=128, kernel_size=(3, 3), padding='same', activation='relu')(tensor_out)
-    tensor_out = BatchNormalization(axis=1)(tensor_out)
+    tensor_out = tfa.layers.GroupNormalization(groups=32)(tensor_out)
     tensor_out = MaxPooling2D(pool_size=(2, 2))(tensor_out)
     tensor_out = Conv2D(filters=256, kernel_size=(3, 3), padding='same', activation='relu')(tensor_out)
     tensor_out = Conv2D(filters=256, kernel_size=(3, 3), padding='same', activation='relu')(tensor_out)
     tensor_out = MaxPooling2D(pool_size=(2, 2))(tensor_out)
     tensor_out = Conv2D(filters=512, kernel_size=(3, 3), padding='same', activation='relu')(tensor_out)
-    tensor_out = BatchNormalization(axis=1)(tensor_out)
+    tensor_out = tfa.layers.GroupNormalization(groups=32)(tensor_out)
     tensor_out = MaxPooling2D(pool_size=(2, 2))(tensor_out)
 
     tensor_out = Flatten()(tensor_out)
     tensor_out = Dropout(0.5)(tensor_out)
 
     tensor_out = [Dense(len(allowedChars), name='digit' + str(i), activation='softmax')(tensor_out) for i in range(1, num_digit + 1)]
-    
+
     model = Model(inputs=tensor_in, outputs=tensor_out)
     model.compile(loss='categorical_crossentropy', optimizer='Adamax', metrics=['accuracy'])
     model.summary()
-    
+
     return model
 
 
@@ -122,7 +122,7 @@ def build_resnet50_model(size, allowedChars, num_digit):
     model = ResNet50(weights='imagenet', include_top=False, input_shape=(size, size, 3))
 
     tensor_in = model.input
-    
+
     tensor_out = model.output
     tensor_out = Flatten()(tensor_out)
     tensor_out = Dropout(0.5)(tensor_out)
@@ -143,7 +143,7 @@ def build_inceptionv3_model(size, allowedChars, num_digit):
     model = InceptionV3(weights='imagenet', include_top=False, input_shape=(size, size, 3))
 
     tensor_in = model.input
-    
+
     tensor_out = model.output
     tensor_out = Flatten()(tensor_out)
     tensor_out = Dropout(0.5)(tensor_out)

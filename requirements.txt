@@ -10,3 +10,5 @@ h5py >= 3.7.0
 scikit-learn >= 1.1.2
 jupyterlab
 pytesseract == 0.3.13
+tensorflow-addons == 0.23.0
+typeguard == 2.13.3

@@ -34,6 +34,10 @@ uv run cnn.py
 
 ### 參考資料
 
+https://github.com/yizZhang0421/thsr_robot/tree/master
+
+https://github.com/gary9987/keras-TaiwanHighSpeedRail-captcha/tree/master/src
+
 其實基本上都是依照下面三個參考資料在實作，所以有疑問請在參考一下這些資料。
 
 [gary9987/-Keras-Python3.6-captcha](https://github.com/gary9987/-Keras-TensorFlow-Python3.6-)
