@@ -31,7 +31,7 @@ def one_hot_decoding(prediction, allowedChars):
     return text
 
 
-# In[1]:
+# In[ ]:
 
 
 def read_train_data(filename, size):

@@ -46,7 +46,7 @@ def findRegression(img):
 
     X = np.array([imagedata[1]])
     Y = HEIGHT - imagedata[0]
-    
+
     poly_reg = PolynomialFeatures(degree = 2)
     X_ = poly_reg.fit_transform(X.T)
     regr = LinearRegression()
@@ -74,14 +74,169 @@ def dePolynomial(img, regr):
 # In[ ]:
 
 
+def addPadding(img):
+    size = (WIDTH - HEIGHT) // 2
+    const = cv2.copyMakeBorder(img, size, size, 0, 0, cv2.BORDER_CONSTANT, value = [0,0,0])
+    return const
+
+
+# In[ ]:
+
+
+def enhanceText(img):
+    """
+    針對文字識別優化的圖片增強
+    """
+    # 1. 自適應直方圖均衡化
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+    img = clahe.apply(img)
+
+    # 2. 雙邊濾波保邊去噪
+    img = cv2.bilateralFilter(img, 9, 75, 75)
+
+    # 3. 自適應閾值二值化
+    binary = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                   cv2.THRESH_BINARY, 11, 2)
+
+    # 4. 形態學操作清理噪點
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
+
+    # 5. 文字筆劃增強
+    kernel_dilate = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 1))
+    binary = cv2.dilate(binary, kernel_dilate, iterations=1)
+
+    return binary
+
+def advancedTextEnhancement(img):
+    """
+    更進階的文字增強方法
+    """
+    # 1. Gamma校正增強對比度
+    gamma = 1.2
+    inv_gamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+    img = cv2.LUT(img, table)
+
+    # 2. 銳化濾波
+    kernel_sharp = np.array([[-1,-1,-1],
+                            [-1, 9,-1],
+                            [-1,-1,-1]])
+    img = cv2.filter2D(img, -1, kernel_sharp)
+
+    # 3. 多尺度Retinex增強
+    img = multiScaleRetinex(img)
+
+    # 4. 自適應二值化 (Otsu + Gaussian)
+    blur = cv2.GaussianBlur(img, (5, 5), 0)
+    _, binary = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # 5. 連通組件清理
+    binary = cleanSmallComponents(binary)
+
+    return binary
+
+def multiScaleRetinex(img, scales=[15, 80, 250]):
+    """
+    多尺度Retinex演算法增強圖片
+    """
+    img = img.astype(np.float32) + 1.0
+    retinex = np.zeros_like(img)
+
+    for scale in scales:
+        gaussian = cv2.GaussianBlur(img, (0, 0), scale)
+        retinex += np.log10(img) - np.log10(gaussian)
+
+    retinex = retinex / len(scales)
+    retinex = (retinex - np.min(retinex)) / (np.max(retinex) - np.min(retinex)) * 255
+    return retinex.astype(np.uint8)
+
+def cleanSmallComponents(binary, min_size=50):
+    """
+    清理小的連通組件
+    """
+    # 找到連通組件
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary, connectivity=8)
+
+    # 創建清理後的圖片
+    cleaned = np.zeros_like(binary)
+
+    for i in range(1, num_labels):  # 跳過背景(標籤0)
+        if stats[i, cv2.CC_STAT_AREA] >= min_size:
+            cleaned[labels == i] = 255
+
+    return cleaned
+
+def textSpecificBinarization(img):
+    """
+    專門針對文字的二值化方法
+    """
+    # 1. 預處理
+    img = cv2.medianBlur(img, 3)
+
+    # 2. 嘗試多種閾值方法並選擇最佳
+    methods = []
+
+    # Otsu
+    _, otsu = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    methods.append(otsu)
+
+    # 自適應閾值 (均值)
+    adaptive_mean = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                         cv2.THRESH_BINARY, 15, 8)
+    methods.append(adaptive_mean)
+
+    # 自適應閾值 (高斯)
+    adaptive_gaussian = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                            cv2.THRESH_BINARY, 15, 8)
+    methods.append(adaptive_gaussian)
+
+    # 選擇文字區域最清晰的方法
+    best_method = selectBestBinarization(methods, img)
+
+    return best_method
+
+def selectBestBinarization(methods, original):
+    """
+    基於文字清晰度選擇最佳二值化方法
+    """
+    scores = []
+
+    for method in methods:
+        # 計算邊緣強度作為清晰度指標
+        edges = cv2.Canny(method, 50, 150)
+        edge_density = np.sum(edges > 0) / edges.size
+
+        # 計算連通組件數量 (適中的組件數量通常對應好的文字分割)
+        num_labels, _ = cv2.connectedComponents(method)
+        component_score = 1.0 / (1.0 + abs(num_labels - 10))  # 假設理想組件數為10
+
+        # 綜合評分
+        score = edge_density * 0.7 + component_score * 0.3
+        scores.append(score)
+
+    best_idx = np.argmax(scores)
+    return methods[best_idx]
+
+
+# In[ ]:
+
+
 def preprocessing(from_filename, to_filename):
     if not os.path.isfile(from_filename):
         return
     img = imgDenoise(from_filename)
     img = img2Gray(img)
     regr = findRegression(img)
-    newimg = dePolynomial(img, regr)
-    cv2.imwrite(to_filename, newimg)
+    depoly = dePolynomial(img, regr)
+
+    enhanced = enhanceText(depoly)
+    # enhanced = advancedTextEnhancement(depoly)
+    # enhanced = textSpecificBinarization(depoly)
+
+    padding = addPadding(enhanced)
+    cv2.imwrite(to_filename, padding)
     return
 
 
@@ -98,15 +253,15 @@ while True:
         i -= 1
         break
 
-print("start to process image from index: " + str(i))
+print("start to process image from index: " + str(i + 1))
 
-# while True:
-#     i += 1
-#     filename = CAPTCHA_FOLDER + str(i) + '.jpg'
-#     if not os.path.isfile(filename):
-#         break
-#     preprocessing(filename, PROCESSED_FOLDER + str(i) + '.jpg')
-#     print("i: " + str(i))
+while True:
+    i += 1
+    filename = CAPTCHA_FOLDER + str(i) + '.jpg'
+    if not os.path.isfile(filename):
+        break
+    preprocessing(filename, PROCESSED_FOLDER + str(i) + '.jpg')
+    print("i: ", i)
 
 print("completed")
 
