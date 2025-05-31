@@ -47,7 +47,7 @@ print("Reading completed")
 
 
 filepath = MODEL_FOLDER + "{epoch:02d}-{loss:.2f}-{val_loss:.2f}.hdf5"
-checkpoint = ModelCheckpoint(filepath, monitor='val_digit4_accuracy', verbose=1, save_best_only=True, mode='max')
+checkpoint = ModelCheckpoint(filepath, verbose=1, save_best_only=False)
 earlystop = EarlyStopping(monitor='val_loss', patience=12, verbose=1, mode='auto')
 tensorBoard = TensorBoard(log_dir = 'logs', histogram_freq = 1)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, verbose=1, min_lr=1e-6)
