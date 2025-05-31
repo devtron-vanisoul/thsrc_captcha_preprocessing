@@ -116,8 +116,27 @@ def build_vgg_model(width, height, allowedChars, num_digit):
 # In[ ]:
 
 
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout, multiply, Reshape
+
+def se_block(input_tensor, ratio=8, use_bias=True):
+    channel = input_tensor.shape[-1]
+    se_shape = (1, 1, channel)
+
+    se = GlobalAveragePooling2D()(input_tensor)
+    se = Reshape(se_shape)(se)
+    se = Dense(channel // ratio, activation='relu', use_bias=use_bias)(se)
+    se = Dense(channel, activation='sigmoid', use_bias=use_bias)(se)
+
+    x = multiply([input_tensor, se])
+    return x
+
+
+# In[ ]:
+
+
 from keras.applications import ResNet50
 import tensorflow_addons as tfa
+from tensorflow.keras.layers import GlobalAveragePooling2D
 
 def build_resnet50_model(width, height, allowedChars, num_digit):
     model = ResNet50(weights='imagenet', include_top=False, input_shape=(height, width, 3))
@@ -125,7 +144,9 @@ def build_resnet50_model(width, height, allowedChars, num_digit):
     tensor_in = model.input
 
     tensor_out = model.output
-    tensor_out = Flatten()(tensor_out)
+    # tensor_out = Flatten()(tensor_out)
+    tensor_out = se_block(tensor_out)
+    tensor_out = GlobalAveragePooling2D()(tensor_out)
 
     tensor_out = tfa.layers.GroupNormalization(groups=32)(tensor_out)
 
