@@ -15,10 +15,9 @@ import sys
 import os
 import cv2
 import numpy as np
-from PIL import Image
 import argparse
 import tempfile
-import pytesseract
+import tensorflow_addons as tfa
 
 try:
     from keras.models import load_model
@@ -29,7 +28,7 @@ except ImportError as e:
     sys.exit(1)
 
 # 設定參數
-MODEL_PATH = "09-0.09-0.10.hdf5"
+MODEL_PATH = "25-0.00-0.02.hdf5"
 
 class CaptchaPredictor:
     def __init__(self, model_path=MODEL_PATH):
@@ -38,7 +37,7 @@ class CaptchaPredictor:
             raise FileNotFoundError(f"找不到模型檔案: {model_path}")
 
         print("載入模型中...")
-        self.model = load_model(model_path)
+        self.model = load_model(model_path, custom_objects={'Addons>GroupNormalization': tfa.layers.GroupNormalization})
         print("模型載入完成")
 
     def predict(self, image_path):
@@ -52,37 +51,24 @@ class CaptchaPredictor:
             str: 預測的驗證碼結果
         """
         allowedChars = '234579ACFHKMNPQRTYZ'
-        WIDTH = 140
-        HEIGHT = 48
-
-
-        img = Image.open(image_path)
-        img = img.resize((WIDTH, HEIGHT), Image.LANCZOS)
-        # convert rgba to rgb
-        img = img.convert('RGB')
 
         # Save processed image to temp path
         temp_dir = tempfile.gettempdir()
         temp_path_processed = os.path.join(temp_dir, 'captcha.jpg')
-        img.save(temp_path_processed, "JPEG")
 
-        preprocessing(temp_path_processed, temp_path_processed)
+        preprocessing(image_path, temp_path_processed)
 
-        # result = pytesseract.image_to_string(
-        #     img,
-        #     config='--psm 7 -c tessedit_char_whitelist=' + allowedChars,
-        #     lang='eng'
-        # )
-        # predict_captcha=result.replace(' ', '')
+        train_data = np.stack([
+            np.array(cv2.imread(temp_path_processed)) / 127.5 - 1
+        ])
 
-        train_data = np.stack([np.array(cv2.imread(temp_path_processed))/255.0])
-        model = load_model("thsrc_cnn_model.hdf5")
-        prediction = model.predict(train_data)
+        model = self.model
+        predictions = model.predict(train_data)
 
-        predict_captcha = ''
-        for predict in prediction:
-            value = np.argmax(predict[0])
-            predict_captcha += allowedChars[value]
+        output = ""
+        for i in range(len(predictions)):
+            pred_class = np.argmax(predictions[i])
+            output += allowedChars[pred_class]
 
         # Remove temp files
         os.remove(temp_path_processed)
@@ -90,9 +76,9 @@ class CaptchaPredictor:
         # 將結果儲存到檔案.txt, 要存在與圖片同一目錄下
         result_file = os.path.splitext(image_path)[0] + '_result.txt'
         with open(result_file, 'w') as f:
-            f.write(predict_captcha)
+            f.write(output)
 
-        return predict_captcha
+        return output
 
 def main():
     """主函數"""

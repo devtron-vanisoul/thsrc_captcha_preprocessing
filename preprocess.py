@@ -223,19 +223,6 @@ def selectBestBinarization(methods, original):
 # In[ ]:
 
 
-dic = [[0] * 2 for i in range(100)]
-for i in range(100):
-    dic[i][0]=25
-    dic[i][1]=25
-dic[50][0]=26
-dic[50][1]=24
-dic[48][0]=23
-dic[48][1]=30
-dic[46][0]=27
-dic[46][1]=25
-dic[45][0]=21
-dic[45][1]=30
-
 def preprocessing(from_filename, to_filename):
     img = cv2.imread(from_filename)
     img=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -309,14 +296,11 @@ def preprocessing(from_filename, to_filename):
         value=[255, 255, 255]
     )
 
+    # 上下切 80, 左右切 100
+    img = img[80:img.shape[0]-80, 100:img.shape[1]-100]
+    # resize to 140 48
     img = cv2.resize(img, (WIDTH, HEIGHT), interpolation=cv2.INTER_CUBIC)
 
     cv2.imwrite(to_filename, img)
     return
-
-
-# In[ ]:
-
-
-
 
