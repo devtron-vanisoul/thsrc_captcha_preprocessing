@@ -27,8 +27,8 @@ except ImportError as e:
     print("請執行: uv pip install -r requirements.txt")
     sys.exit(1)
 
-# 設定參數
-MODEL_PATH = "25-0.00-0.02.hdf5"
+# 設定參數 19
+MODEL_PATH = "./models/14-0.03-0.05.hdf5"
 
 class CaptchaPredictor:
     def __init__(self, model_path=MODEL_PATH):
@@ -53,8 +53,9 @@ class CaptchaPredictor:
         allowedChars = '234579ACFHKMNPQRTYZ'
 
         # Save processed image to temp path
-        temp_dir = tempfile.gettempdir()
-        temp_path_processed = os.path.join(temp_dir, 'captcha.jpg')
+        # temp_dir = tempfile.gettempdir()
+        temp_path_processed = "captcha.jpg"
+        # os.path.join(temp_dir, 'captcha.jpg')
 
         preprocessing(image_path, temp_path_processed)
 
@@ -71,7 +72,7 @@ class CaptchaPredictor:
             output += allowedChars[pred_class]
 
         # Remove temp files
-        os.remove(temp_path_processed)
+        # os.remove(temp_path_processed)
 
         # 將結果儲存到檔案.txt, 要存在與圖片同一目錄下
         result_file = os.path.splitext(image_path)[0] + '_result.txt'
@@ -112,6 +113,21 @@ def main():
 
     args = parser.parse_args()
 
+    # =========== 測試所有模型 ===========
+    # model_files = [fn for fn in os.listdir("./model") if fn.endswith('.hdf5')]
+    # results = []
+
+    # for model_file in model_files:
+    #     basePath = "./model"
+    #     args.model = os.path.join(basePath, model_file)
+    #     predictor = CaptchaPredictor(args.model)
+    #     result = predictor.predict(args.image_path)
+    #     results.append((model_file, result))
+
+    # for model_file, result in results:
+    #     print(f"模型 {model_file} 的預測結果: {result}")
+
+    # =========== 單一預測 ===========
     try:
         # 初始化預測器
         predictor = CaptchaPredictor(args.model)
@@ -133,6 +149,8 @@ def main():
     except Exception as e:
         print(f"執行錯誤: {e}", file=sys.stderr)
         sys.exit(1)
+    # =========== 單一預測 ===========
+
 
 if __name__ == "__main__":
     main()

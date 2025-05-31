@@ -6,6 +6,22 @@
 Keras、Tensorflow
 進行實作，請勿使用於不法用途。若因使用該專案而大量訂票，相關的刑事、民事相關責任，請自行負責。
 
+### GPU 依賴
+
+- `cuda-toolkit-11-2`
+- `cudnn-11.2-linux-x64-v8.1.0.77.tgz`
+
+```shell
+tgz -xzvf cudnn-11.2-linux-x64-v8.1.0.77.tgz
+sudo cp include/* /usr/local/cuda/include
+sudo cp lib64/* /usr/local/cuda/lib64
+sudo chmod a+r /usr/local/cuda/include/cudnn*.h /usr/local/cuda/lib64/libcudnn*
+
+# 以下加入 zshrc / bashrc
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+```
+
 ### 執行
 
 - 初始化
