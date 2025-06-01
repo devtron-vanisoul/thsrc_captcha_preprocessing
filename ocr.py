@@ -5,10 +5,11 @@ from mistralai.models import OCRResponse
 from pathlib import Path
 import os
 import base64
+import time
 
 # 設定圖片資料夾路徑
 img_dir = './pre-error-log-img'
-API_KEY = "XXXXX"
+API_KEY = "XXXXXX"
 
 def parse_ocr_results(ocr_response: OCRResponse) -> str:
     markdown_str = ocr_response.pages[0].markdown
@@ -57,3 +58,8 @@ for filename in os.listdir(img_dir):
         # 重新命名圖片
             os.rename(file_path, new_path)
             print(f'✔️ 已重新命名：{filename} → {new_name}')
+        else:
+            # 刪除此檔案
+            os.remove(file_path)
+            print(f'❌ 無效的代碼：{filename}，將刪除檔案')
+    time.sleep(3)
