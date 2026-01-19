@@ -27,7 +27,8 @@ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 - 初始化
 
 ```shell
-uv venv
+uv venv .venv --python 3.10
+source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
